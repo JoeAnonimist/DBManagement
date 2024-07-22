@@ -1,0 +1,412 @@
+
+
+The views in the INFORMATION_SCHEMA are defined by the SQL standard and display information that is required by that. So they can't display any Postgres specific information that doesn't go along with the rules of the SQL standard. So queries using that are likely to work on other DBMS products as well that support INFORMATION_SCHEMA Not all products implement it 100% correct though. Postgres also has some areas where it deviates from the specification of the INFORMATION_SCHEMA. But the similarities are close enough that it's really easy to port and use such a query with a different database.
+
+All system tables and views in the pg_catalog schema (including pg_tables) are completely Postgres specific. Queries using those will never run on other DBMS products. The INFORMATION_SCHEMA views use those system views and tables to collect and present the metadata as required by the SQL standard.
+
+
+----
+List all databases:
+----
+postgres=# select datname from pg_database;
+    datname
+----------------
+ postgres
+ template1
+ template0
+ pagila
+ adventureworks
+ my_database
+(6 rows)
+
+
+----
+List all schemas in a database
+----
+
+postgres=# select schema_name from information_schema.schemata;
+    schema_name
+--------------------
+ pg_toast
+ pg_catalog
+ public
+ information_schema
+(4 rows)
+
+----
+List all schemas in a database
+----
+
+postgres=# select nspname from pg_catalog.pg_namespace;
+      nspname
+--------------------
+ pg_toast
+ pg_catalog
+ public
+ information_schema
+(4 rows)
+
+----
+List all tables in a schema
+----
+
+postgres=# select tablename from pg_catalog.pg_tables where schemaname = 'pg_catalog';
+        tablename
+-------------------------
+ pg_statistic
+ pg_type
+ pg_foreign_table
+ pg_authid
+ pg_statistic_ext_data
+ pg_user_mapping
+ pg_subscription
+ pg_attribute
+ pg_proc
+ pg_class
+ pg_attrdef
+ pg_constraint
+ pg_inherits
+ pg_index
+ pg_operator
+ pg_opfamily
+ pg_opclass
+ pg_am
+ pg_amop
+ pg_amproc
+ pg_language
+ pg_largeobject_metadata
+ pg_aggregate
+ pg_statistic_ext
+ pg_rewrite
+ pg_trigger
+ pg_event_trigger
+ pg_description
+ pg_cast
+ pg_enum
+ pg_namespace
+ pg_conversion
+ pg_depend
+ pg_database
+ pg_db_role_setting
+ pg_tablespace
+ pg_auth_members
+ pg_shdepend
+ pg_shdescription
+ pg_ts_config
+ pg_ts_config_map
+ pg_ts_dict
+ pg_ts_parser
+ pg_ts_template
+ pg_extension
+ pg_foreign_data_wrapper
+ pg_foreign_server
+ pg_policy
+ pg_replication_origin
+ pg_default_acl
+ pg_init_privs
+ pg_seclabel
+ pg_shseclabel
+ pg_collation
+ pg_partitioned_table
+ pg_range
+ pg_transform
+ pg_sequence
+ pg_publication
+ pg_publication_rel
+ pg_subscription_rel
+ pg_largeobject
+(62 rows)
+
+----
+List all views in a schema
+----
+
+postgres=# select viewname from pg_catalog.pg_views where schemaname = 'information_schema';
+               viewname
+---------------------------------------
+ information_schema_catalog_name
+ attributes
+ applicable_roles
+ administrable_role_authorizations
+ check_constraint_routine_usage
+ character_sets
+ check_constraints
+ collations
+ collation_character_set_applicability
+ column_column_usage
+ column_domain_usage
+ routines
+ column_privileges
+ role_column_grants
+ column_udt_usage
+ columns
+ constraint_column_usage
+ routine_column_usage
+ constraint_table_usage
+ domain_constraints
+ domain_udt_usage
+ routine_privileges
+ domains
+ enabled_roles
+ schemata
+ key_column_usage
+ role_routine_grants
+ parameters
+ referential_constraints
+ routine_routine_usage
+ routine_sequence_usage
+ sequences
+ routine_table_usage
+ table_constraints
+ table_privileges
+ view_table_usage
+ role_table_grants
+ tables
+ transforms
+ user_mappings
+ triggered_update_columns
+ views
+ triggers
+ udt_privileges
+ foreign_data_wrappers
+ role_udt_grants
+ data_type_privileges
+ usage_privileges
+ role_usage_grants
+ user_defined_types
+ element_types
+ view_column_usage
+ view_routine_usage
+ _pg_foreign_servers
+ _pg_foreign_table_columns
+ column_options
+ _pg_foreign_data_wrappers
+ foreign_table_options
+ foreign_data_wrapper_options
+ foreign_server_options
+ foreign_servers
+ _pg_foreign_tables
+ user_mapping_options
+ foreign_tables
+ _pg_user_mappings
+(65 rows)
+
+
+postgres=# select table_name from information_schema.views where table_schema = 'information_schema';
+              table_name
+---------------------------------------
+ information_schema_catalog_name
+ attributes
+ applicable_roles
+ administrable_role_authorizations
+ check_constraint_routine_usage
+ character_sets
+ check_constraints
+ collations
+ collation_character_set_applicability
+ column_column_usage
+ column_domain_usage
+ routines
+ column_privileges
+ role_column_grants
+ column_udt_usage
+ columns
+ constraint_column_usage
+ routine_column_usage
+ constraint_table_usage
+ domain_constraints
+ domain_udt_usage
+ routine_privileges
+ domains
+ enabled_roles
+ schemata
+ key_column_usage
+ role_routine_grants
+ parameters
+ referential_constraints
+ routine_routine_usage
+ routine_sequence_usage
+ sequences
+ routine_table_usage
+ table_constraints
+ table_privileges
+ view_table_usage
+ role_table_grants
+ tables
+ transforms
+ user_mappings
+ triggered_update_columns
+ views
+ triggers
+ udt_privileges
+ foreign_data_wrappers
+ role_udt_grants
+ data_type_privileges
+ usage_privileges
+ role_usage_grants
+ user_defined_types
+ element_types
+ view_column_usage
+ view_routine_usage
+ _pg_foreign_servers
+ _pg_foreign_table_columns
+ column_options
+ _pg_foreign_data_wrappers
+ foreign_table_options
+ foreign_data_wrapper_options
+ foreign_server_options
+ foreign_servers
+ _pg_foreign_tables
+ user_mapping_options
+ foreign_tables
+ _pg_user_mappings
+(65 rows)
+
+----
+Example table
+----
+
+
+pagila=# \d+ film
+                                                                         Table "public.film"
+        Column        |           Type           | Collation | Nullable |                Default                | Storage  | Compression | Stats target | Description
+----------------------+--------------------------+-----------+----------+---------------------------------------+----------+-------------+--------------+-------------
+ film_id              | integer                  |           | not null | nextval('film_film_id_seq'::regclass) | plain    |             |              |
+ title                | text                     |           | not null |                                       | extended |             |              |
+ description          | text                     |           |          |                                       | extended |             |              |
+ release_year         | year                     |           |          |                                       | plain    |             |              |
+ language_id          | integer                  |           | not null |                                       | plain    |             |              |
+ original_language_id | integer                  |           |          |                                       | plain    |             |              |
+ rental_duration      | smallint                 |           | not null | 3                                     | plain    |             |              |
+ rental_rate          | numeric(4,2)             |           | not null | 4.99                                  | main     |             |              |
+ length               | smallint                 |           |          |                                       | plain    |             |              |
+ replacement_cost     | numeric(5,2)             |           | not null | 19.99                                 | main     |             |              |
+ rating               | mpaa_rating              |           |          | 'G'::mpaa_rating                      | plain    |             |              |
+ last_update          | timestamp with time zone |           | not null | now()                                 | plain    |             |              |
+ special_features     | text[]                   |           |          |                                       | extended |             |              |
+ fulltext             | tsvector                 |           | not null |                                       | extended |             |              |
+Indexes:
+    "film_pkey" PRIMARY KEY, btree (film_id)
+    "film_fulltext_idx" gist (fulltext)
+    "idx_fk_language_id" btree (language_id)
+    "idx_fk_original_language_id" btree (original_language_id)
+    "idx_title" btree (title)
+Foreign-key constraints:
+    "film_language_id_fkey" FOREIGN KEY (language_id) REFERENCES language(language_id) ON UPDATE CASCADE ON DELETE RESTRICT
+    "film_original_language_id_fkey" FOREIGN KEY (original_language_id) REFERENCES language(language_id) ON UPDATE CASCADE ON DELETE RESTRICT
+Referenced by:
+    TABLE "film_actor" CONSTRAINT "film_actor_film_id_fkey" FOREIGN KEY (film_id) REFERENCES film(film_id) ON UPDATE CASCADE ON DELETE RESTRICT
+    TABLE "film_category" CONSTRAINT "film_category_film_id_fkey" FOREIGN KEY (film_id) REFERENCES film(film_id) ON UPDATE CASCADE ON DELETE RESTRICT
+    TABLE "inventory" CONSTRAINT "inventory_film_id_fkey" FOREIGN KEY (film_id) REFERENCES film(film_id) ON UPDATE CASCADE ON DELETE RESTRICT
+Triggers:
+    film_fulltext_trigger BEFORE INSERT OR UPDATE ON film FOR EACH ROW EXECUTE FUNCTION tsvector_update_trigger('fulltext', 'pg_catalog.english', 'title', 'description')
+    last_updated BEFORE UPDATE ON film FOR EACH ROW EXECUTE FUNCTION last_updated()
+Access method: heap
+
+
+----
+List all columns in a table
+----
+
+
+select attnum, attname, typname, attcollation, 
+    attnotnull, pg_get_expr(adbin, adrelid) , attstorage 
+from pg_attribute attr
+join pg_type typ
+on attr.atttypid = typ.oid
+left join pg_attrdef def
+on attr.attrelid = def.adrelid and attr.attnum = def.adnum
+where attrelid = 'film'::regclass and attnum > 0;
+
+
+ attnum |       attname        |   typname   | attcollation | attnotnull |              pg_get_expr              | attstorage
+--------+----------------------+-------------+--------------+------------+---------------------------------------+------------
+      1 | film_id              | int4        |            0 | t          | nextval('film_film_id_seq'::regclass) | p
+      2 | title                | text        |          100 | t          |                                       | x
+      3 | description          | text        |          100 | f          |                                       | x
+      4 | release_year         | year        |            0 | f          |                                       | p
+      5 | language_id          | int4        |            0 | t          |                                       | p
+      6 | original_language_id | int4        |            0 | f          |                                       | p
+      7 | rental_duration      | int2        |            0 | t          | 3                                     | p
+      8 | rental_rate          | numeric     |            0 | t          | 4.99                                  | m
+      9 | length               | int2        |            0 | f          |                                       | p
+     10 | replacement_cost     | numeric     |            0 | t          | 19.99                                 | m
+     11 | rating               | mpaa_rating |            0 | f          | 'G'::mpaa_rating                      | p
+     12 | last_update          | timestamptz |            0 | t          | now()                                 | p
+     13 | special_features     | _text       |          100 | f          |                                       | x
+     14 | fulltext             | tsvector    |            0 | t          |                                       | x
+(14 rows)
+
+
+----
+List indexes
+----
+
+select cls.relname, ind.indkey from pg_index ind
+join pg_class cls
+on ind.indexrelid = cls.oid
+where indrelid = 'film'::regclass;
+
+           relname           | indkey
+-----------------------------+--------
+ film_pkey                   | 1
+ film_fulltext_idx           | 14
+ idx_fk_language_id          | 5
+ idx_fk_original_language_id | 6
+ idx_title                   | 2
+(5 rows)
+
+
+----
+List all foreign keys for a table
+----
+
+Foreign key constraints:
+
+select conname, contype, conrelid, confrelid, cl.relname 
+from pg_constraint con
+join pg_class cl
+on con.confrelid = cl.oid
+where conrelid = 'film'::regclass 
+and contype = 'f';
+
+            conname             | contype | conrelid | confrelid | relname
+--------------------------------+---------+----------+-----------+----------
+ film_language_id_fkey          | f       |    16437 |     16502 | language
+ film_original_language_id_fkey | f       |    16437 |     16502 | language
+(2 rows)
+
+
+Referenced by:
+
+select conname, contype, conrelid, cl.relname, confrelid 
+from pg_constraint con
+join pg_class cl
+on con.conrelid = cl.oid
+where confrelid = 'film'::regclass 
+and contype = 'f';
+
+          conname           | contype | conrelid |    relname    | confrelid
+----------------------------+---------+----------+---------------+-----------
+ film_actor_film_id_fkey    | f       |    16448 | film_actor    |     16437
+ film_category_film_id_fkey | f       |    16452 | film_category |     16437
+ inventory_film_id_fkey     | f       |    16496 | inventory     |     16437
+(3 rows)
+
+
+----
+List triggers
+----
+
+select tgname, tgisinternal, tgfoid, proc.proname
+from pg_trigger trig
+join pg_proc proc
+on trig.tgfoid = proc.oid
+where tgrelid = 'film'::regclass 
+and tgisinternal = false;
+
+        tgname         | tgisinternal | tgfoid |         proname
+-----------------------+--------------+--------+-------------------------
+ film_fulltext_trigger | f            |   3752 | tsvector_update_trigger
+ last_updated          | f            |  16407 | last_updated
+(2 rows)
