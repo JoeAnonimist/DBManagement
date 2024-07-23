@@ -4,8 +4,9 @@ from objectpath import ObjectPath
 
 class Database:
     
-    def __init__(self):
+    def __init__(self, name):
         self.connection_pools = {}
+        self.name = name
     
     
     def get_connection_pool(self, object_path):
@@ -15,7 +16,7 @@ class Database:
                 5, 10, user='jon',
                 password = 'jon',
                 host=object_path.__db_server__, 
-                database=object_path.__db_database__)
+                database=object_path.__db_database__.name)
             self.connection_pools[object_path.__db_database__] = pool
             
         return self.connection_pools[object_path.__db_database__]
@@ -49,6 +50,6 @@ class Database:
 
 if __name__ == '__main__':
     
-    path = ObjectPath('172.17.0.2', 'pagila', 'actor')
-    db = Database()
+    db = Database('pagila')
+    path = ObjectPath('172.17.0.2', db, 'actor')
     db.instances_of(path)
