@@ -9,6 +9,7 @@ class DBTable():
         self.path = path
         self.attributes = self.populate_columns()
         self.primary_keys = self.populate_primary_keys()
+        self.foreign_keys = self.populate_foreign_keys()
     
     def populate_columns(self):
         with self.path.__db_database__.get_connection_pool(path).getconn() as connection:
@@ -29,6 +30,16 @@ class DBTable():
                 for row in cursor.fetchall():
                     primary_keys.append(row[2])
         return primary_keys
+        
+    def populate_foreign_keys(self):
+        with self.path.__db_database__.get_connection_pool(path).getconn() as connection:
+            with connection.cursor() as cursor:
+                table_name = {"table_name": self.path.__db_table__}
+                cursor.execute(queries.GET_FOREIGN_KEYS, table_name)
+                foreign_keys = []
+                for row in cursor.fetchall():
+                    foreign_keys.append(row[2] + ', ' + row[3] + ', ' + row[4] + ', ' + row[5])
+        return foreign_keys
 
 
 if __name__ == '__main__':
@@ -36,9 +47,15 @@ if __name__ == '__main__':
     db = Database('pagila')
     path = ObjectPath('localhost', db, 'film')
     tbl = DBTable(path)
+    
     print('attributes:\n')
     for attr in tbl.attributes:
         print(attr)
+    
     print('\nprimary keys:\n')
     for pk in tbl.primary_keys:
         print(pk)
+        
+    print('\nforeign keys\n')
+    for fk in tbl.foreign_keys:
+        print(fk)

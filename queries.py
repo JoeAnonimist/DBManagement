@@ -19,3 +19,17 @@ Join pg_class tbl On tbl.oid = con.conrelid
 Where contype = 'p'
 And con.conrelid = %(table_name)s::regclass;
 """
+
+GET_FOREIGN_KEYS = """
+Select con.conname, con.contype, src_cl.relname, 
+    src_attr.attname, cl.relname, attr.attname
+From pg_constraint con
+Join pg_class cl On con.confrelid = cl.oid
+Join pg_attribute attr On attr.attrelid = cl.oid
+Join pg_class src_cl On con.conrelid = src_cl.oid
+Join pg_attribute src_attr On src_attr.attrelid = src_cl.oid
+Where con.conrelid = 'film'::regclass 
+And attr.attnum = ANY(con.confkey)
+And src_attr.attnum = ANY(con.conkey)
+And contype = 'f';
+"""

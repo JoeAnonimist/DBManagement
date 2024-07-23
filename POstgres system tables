@@ -427,11 +427,15 @@ And contype = 'f';
 
 Referenced by:
 
-select conname, contype, conrelid, cl.relname, confrelid 
+select con.conname, con.contype, con.conrelid, cl.relname, con.confrelid 
 from pg_constraint con
-join pg_class cl
-on con.conrelid = cl.oid
+join pg_class cl on con.conrelid = cl.oid
+join pg_attribute attr on attr.attrelid = cl.oid
+join pg_class src_cl on con.confrelid = src_cl.oid
+join pg_attribute src_attr on src_attr.attrelid = src_cl.oid 
 where confrelid = 'film'::regclass 
+And attr.attnum = ANY(con.confkey)
+And src_attr.attnum = ANY(con.conkey)
 and contype = 'f';
 
           conname           | contype | conrelid |    relname    | confrelid
