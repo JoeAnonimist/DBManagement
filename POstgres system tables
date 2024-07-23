@@ -339,6 +339,49 @@ where attrelid = 'film'::regclass and attnum > 0;
 
 
 ----
+List primary keys
+----
+
+select tbl.relname, cls.relname, attr.attname
+from pg_constraint con
+join pg_index ind on con.conindid = ind.indexrelid 
+join pg_class cls on cls.oid = ind.indexrelid
+join pg_attribute attr on attr.attrelid = cls.oid
+join pg_class tbl on tbl.oid = con.conrelid
+where contype = 'p'
+and con.conrelid = 'film'::regclass;
+
+
+ relname |  relname  | attname
+---------+-----------+---------
+ film    | film_pkey | film_id
+(1 row)
+
+
+
+select
+    t.relname as table_name,
+    --i.relname as index_name,
+    a.attname as column_name
+from
+    pg_class t
+    join pg_index ix on t.oid = ix.indrelid
+    join pg_class i on i.oid = ix.indexrelid
+    join pg_attribute a on a.attrelid = t.oid
+where
+    a.attnum = ANY(ix.indkey)
+    and t.relkind = 'r'
+    and ix.indisprimary is true
+    and t.relname like 'film';
+
+
+ table_name | column_name
+------------+-------------
+ film       | film_id
+(1 row)
+
+
+----
 List indexes
 ----
 
@@ -363,17 +406,22 @@ List all foreign keys for a table
 
 Foreign key constraints:
 
-select conname, contype, conrelid, confrelid, cl.relname 
-from pg_constraint con
-join pg_class cl
-on con.confrelid = cl.oid
-where conrelid = 'film'::regclass 
-and contype = 'f';
+Select con.conname, con.contype, src_cl.relname, 
+    src_attr.attname, cl.relname, attr.attname
+From pg_constraint con
+Join pg_class cl On con.confrelid = cl.oid
+Join pg_attribute attr On attr.attrelid = cl.oid
+Join pg_class src_cl On con.conrelid = src_cl.oid
+Join pg_attribute src_attr On src_attr.attrelid = src_cl.oid
+Where con.conrelid = 'film'::regclass 
+And attr.attnum = ANY(con.confkey)
+And src_attr.attnum = ANY(con.conkey)
+And contype = 'f';
 
-            conname             | contype | conrelid | confrelid | relname
---------------------------------+---------+----------+-----------+----------
- film_language_id_fkey          | f       |    16437 |     16502 | language
- film_original_language_id_fkey | f       |    16437 |     16502 | language
+            conname             | contype | conrelid | confrelid | conkey | confkey | relname  |   attname
+--------------------------------+---------+----------+-----------+--------+---------+----------+-------------
+ film_language_id_fkey          | f       |    16437 |     16502 | {5}    | {1}     | language | language_id
+ film_original_language_id_fkey | f       |    16437 |     16502 | {6}    | {1}     | language | language_id
 (2 rows)
 
 
