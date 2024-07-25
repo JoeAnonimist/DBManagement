@@ -425,6 +425,8 @@ And contype = 'f';
 (2 rows)
 
 
+
+
 Referenced by:
 
 select con.conname, con.contype, con.conrelid, cl.relname, con.confrelid 
@@ -444,6 +446,12 @@ and contype = 'f';
  film_category_film_id_fkey | f       |    16452 | film_category |     16437
  inventory_film_id_fkey     | f       |    16496 | inventory     |     16437
 (3 rows)
+
+THE ABOVE DOESN'T WORK
+
+https://stackoverflow.com/questions/1152260/how-to-list-table-foreign-keys
+
+
 
 
 ----

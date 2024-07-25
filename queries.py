@@ -1,35 +1,66 @@
 GET_ATTRIBUTES = """
-Select attnum, attname, typname, attcollation, 
-    attnotnull, pg_get_expr(adbin, adrelid) , attstorage 
-From pg_attribute attr
-Join pg_type typ 
-    On attr.atttypid = typ.oid
-Left Join pg_attrdef def 
-    On attr.attrelid = def.adrelid and attr.attnum = def.adnum
-Where attrelid = %(table_name)s::regclass and attnum > 0;
+SELECT a.attname,
+  pg_catalog.format_type(a.atttypid, a.atttypmod),
+  (SELECT pg_catalog.pg_get_expr(d.adbin, d.adrelid, true)
+   FROM pg_catalog.pg_attrdef d
+   WHERE d.adrelid = a.attrelid AND d.adnum = a.attnum AND a.atthasdef),
+  a.attnotnull,
+  (SELECT c.collname FROM pg_catalog.pg_collation c, pg_catalog.pg_type t
+   WHERE c.oid = a.attcollation AND t.oid = a.atttypid AND a.attcollation <> t.typcollation) AS attcollation,
+  a.attidentity,
+  a.attgenerated,
+  a.attstorage,
+  a.attcompression AS attcompression,
+  CASE WHEN a.attstattarget=-1 THEN NULL ELSE a.attstattarget END AS attstattarget,
+  pg_catalog.col_description(a.attrelid, a.attnum)
+FROM pg_catalog.pg_attribute a
+WHERE a.attrelid = %(table_name)s::regclass AND a.attnum > 0 AND NOT a.attisdropped
+ORDER BY a.attnum;
 """
 
 GET_PRIMARY_KEYS = """
-Select tbl.relname, cls.relname, attr.attname
-From pg_constraint con
-Join pg_index ind On con.conindid = ind.indexrelid 
-Join pg_class cls On cls.oid = ind.indexrelid
-Join pg_attribute attr On attr.attrelid = cls.oid
-Join pg_class tbl On tbl.oid = con.conrelid
-Where contype = 'p'
-And con.conrelid = %(table_name)s::regclass;
+SELECT c2.relname, i.indisprimary, i.indisunique, i.indisclustered, i.indisvalid, pg_catalog.pg_get_indexdef(i.indexrelid, 0, true),
+  pg_catalog.pg_get_constraintdef(con.oid, true), contype, condeferrable, condeferred, i.indisreplident, c2.reltablespace
+FROM pg_catalog.pg_class c, pg_catalog.pg_class c2, pg_catalog.pg_index i
+  LEFT JOIN pg_catalog.pg_constraint con ON (conrelid = i.indrelid AND conindid = i.indexrelid AND contype IN ('p','u','x'))
+WHERE c.oid = %(table_name)s::regclass AND c.oid = i.indrelid AND i.indexrelid = c2.oid AND con.contype = 'p'
+ORDER BY i.indisprimary DESC, c2.relname;
 """
 
 GET_FOREIGN_KEYS = """
-Select con.conname, con.contype, src_cl.relname, 
-    src_attr.attname, cl.relname, attr.attname
-From pg_constraint con
-Join pg_class cl On con.confrelid = cl.oid
-Join pg_attribute attr On attr.attrelid = cl.oid
-Join pg_class src_cl On con.conrelid = src_cl.oid
-Join pg_attribute src_attr On src_attr.attrelid = src_cl.oid
-Where con.conrelid = 'film'::regclass 
-And attr.attnum = ANY(con.confkey)
-And src_attr.attnum = ANY(con.conkey)
-And contype = 'f';
+SELECT true as sametable, conname,
+  pg_catalog.pg_get_constraintdef(r.oid, true) as condef,
+  conrelid::pg_catalog.regclass AS ontable
+FROM pg_catalog.pg_constraint r
+WHERE r.conrelid = %(table_name)s::regclass AND r.contype = 'f'
+     AND conparentid = 0
+ORDER BY conname;
+"""
+
+
+GET_REFERENCES = """
+SELECT conname, conrelid::pg_catalog.regclass AS ontable,
+       pg_catalog.pg_get_constraintdef(oid, true) AS condef
+  FROM pg_catalog.pg_constraint c
+ WHERE confrelid IN (SELECT pg_catalog.pg_partition_ancestors(%(table_name)s)
+                     UNION ALL VALUES (%(table_name)s::pg_catalog.regclass))
+       AND contype = 'f' AND conparentid = 0
+ORDER BY conname;
+"""
+
+GET_TRIGGERS = """
+SELECT t.tgname, pg_catalog.pg_get_triggerdef(t.oid, true), t.tgenabled, t.tgisinternal,
+  CASE WHEN t.tgparentid != 0 THEN
+    (SELECT u.tgrelid::pg_catalog.regclass
+     FROM pg_catalog.pg_trigger AS u,
+          pg_catalog.pg_partition_ancestors(t.tgrelid) WITH ORDINALITY AS a(relid, depth)
+     WHERE u.tgname = t.tgname AND u.tgrelid = a.relid
+           AND u.tgparentid = 0
+     ORDER BY a.depth LIMIT 1)
+  END AS parent
+FROM pg_catalog.pg_trigger t
+WHERE t.tgrelid = (%(table_name)s::pg_catalog.regclass AND (NOT t.tgisinternal OR (t.tgisinternal AND t.tgenabled = 'D')
+    OR EXISTS (SELECT 1 FROM pg_catalog.pg_depend WHERE objid = t.oid
+        AND refclassid = 'pg_catalog.pg_trigger'::pg_catalog.regclass))
+ORDER BY 1;
 """
