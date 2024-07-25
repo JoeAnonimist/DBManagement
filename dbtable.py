@@ -1,5 +1,7 @@
+from copy import copy
 from database import Database
 from objectpath import ObjectPath
+from dbcolumn import DBColumn
 import queries
 
 
@@ -12,67 +14,77 @@ class DBTable():
         self.foreign_keys = self.populate_foreign_keys()
         self.references = self.populate_references()
         self.triggers = self.populate_triggers()
-    
+
+
     def populate_columns(self):
-        with self.path.__db_database__.get_connection_pool(path).getconn() as connection:
-            with connection.cursor() as cursor:
-                table_name = {"table_name": self.path.__db_table__}
-                cursor.execute(queries.GET_ATTRIBUTES, table_name)
-                attributes = []
-                for row in cursor.fetchall():
-                    attributes.append(row[0])
-        return attributes
+
+        columns = self.path.database.exec_query(
+        self.path,
+        queries.GET_ATTRIBUTES,
+        {"table_name": self.path.table})
         
+        column_objects = []
+        
+        for col in columns:
+            column_path = copy(self.path)
+            column_path.database = self.path.database
+            column_objects.append(DBColumn(column_path, col[0], col[1], 
+                col[2], col[3], col[4], col[5], col[6], col[7], col[8], 
+                col[9], col[10], col[11], col[12], col[13], col[14], 
+                col[15]))
+        return column_objects
+
+
     def populate_primary_keys(self):
-        with self.path.__db_database__.get_connection_pool(path).getconn() as connection:
-            with connection.cursor() as cursor:
-                table_name = {"table_name": self.path.__db_table__}
-                cursor.execute(queries.GET_PRIMARY_KEYS, table_name)
-                primary_keys = []
-                for row in cursor.fetchall():
-                    primary_keys.append(row[0])
+
+        primary_keys = self.path.database.exec_query(
+            self.path,
+            queries.GET_PRIMARY_KEYS,
+            {"table_name": self.path.table})
         return primary_keys
-        
+
+
     def populate_foreign_keys(self):
-        with self.path.__db_database__.get_connection_pool(path).getconn() as connection:
-            with connection.cursor() as cursor:
-                table_name = {"table_name": self.path.__db_table__}
-                cursor.execute(queries.GET_FOREIGN_KEYS, table_name)
-                foreign_keys = []
-                for row in cursor.fetchall():
-                    foreign_keys.append(row[1])
+
+        foreign_keys = self.path.database.exec_query(
+            self.path, 
+            queries.GET_FOREIGN_KEYS, 
+            {"table_name": self.path.table})
         return foreign_keys
+
         
     def populate_references(self):
-        with self.path.__db_database__.get_connection_pool(path).getconn() as connection:
-            with connection.cursor() as cursor:
-                table_name = {"table_name": self.path.__db_table__}
-                cursor.execute(queries.GET_REFERENCES, table_name)
-                references = []
-                for row in cursor.fetchall():
-                    references.append(row[1] + ', ' + row[2])
+
+        references = self.path.database.exec_query(
+            self.path,
+            queries.GET_REFERENCES,
+            {"table_name": self.path.table})
         return references
 
+
     def populate_triggers(self):
-        with self.path.__db_database__.get_connection_pool(path).getconn() as connection:
-            with connection.cursor() as cursor:
-                table_name = {"table_name": self.path.__db_table__}
-                cursor.execute(queries.GET_REFERENCES, table_name)
-                triggers = []
-                for row in cursor.fetchall():
-                    triggers.append(row[1] + ', ' + row[2])
+
+        triggers = self.path.database.exec_query(
+            self.path,
+            queries.GET_TRIGGERS,
+            {"table_name": self.path.table})
         return triggers
 
 
 if __name__ == '__main__':
     
     db = Database('pagila')
-    path = ObjectPath('localhost', db, 'film')
+    path = ObjectPath('172.17.0.2', db, 'film')
     tbl = DBTable(path)
     
     print('attributes:\n')
     for attr in tbl.attributes:
-        print(attr)
+        print(attr.number, attr.name, attr.data_type, 
+            attr.data_length, attr.dt_details, attr.dimensions, 
+            attr.not_null, attr.has_default, attr.has_missing, 
+            attr.identity, attr.generated, attr.collation, 
+            attr.acl, attr.options, attr.foreign_data_options, 
+            attr.missing_value)
     
     print('\nprimary keys:\n')
     for pk in tbl.primary_keys:

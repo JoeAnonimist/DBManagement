@@ -1,21 +1,16 @@
 GET_ATTRIBUTES = """
-SELECT a.attname,
-  pg_catalog.format_type(a.atttypid, a.atttypmod),
-  (SELECT pg_catalog.pg_get_expr(d.adbin, d.adrelid, true)
-   FROM pg_catalog.pg_attrdef d
-   WHERE d.adrelid = a.attrelid AND d.adnum = a.attnum AND a.atthasdef),
-  a.attnotnull,
-  (SELECT c.collname FROM pg_catalog.pg_collation c, pg_catalog.pg_type t
-   WHERE c.oid = a.attcollation AND t.oid = a.atttypid AND a.attcollation <> t.typcollation) AS attcollation,
-  a.attidentity,
-  a.attgenerated,
-  a.attstorage,
-  a.attcompression AS attcompression,
-  CASE WHEN a.attstattarget=-1 THEN NULL ELSE a.attstattarget END AS attstattarget,
-  pg_catalog.col_description(a.attrelid, a.attnum)
-FROM pg_catalog.pg_attribute a
-WHERE a.attrelid = %(table_name)s::regclass AND a.attnum > 0 AND NOT a.attisdropped
-ORDER BY a.attnum;
+Select attr.attnum, attr.attname, typ.typname, attr.attlen,  
+    attr.atttypmod, attr.attndims, attr.attnotnull, 
+    attr.atthasdef, attr.atthasmissing, attr.attidentity,
+    attr.attgenerated, attr.attcollation, attr.attacl,
+    attr.attoptions, attr.attfdwoptions,attr.attmissingval,
+    pg_get_expr(adbin, adrelid) , attr.attstorage 
+From pg_attribute attr
+Join pg_type typ 
+    On attr.atttypid = typ.oid
+Left Join pg_attrdef def 
+    On attr.attrelid = def.adrelid and attr.attnum = def.adnum
+Where attrelid = %(table_name)s::regclass and attnum > 0;
 """
 
 GET_PRIMARY_KEYS = """
@@ -59,7 +54,7 @@ SELECT t.tgname, pg_catalog.pg_get_triggerdef(t.oid, true), t.tgenabled, t.tgisi
      ORDER BY a.depth LIMIT 1)
   END AS parent
 FROM pg_catalog.pg_trigger t
-WHERE t.tgrelid = (%(table_name)s::pg_catalog.regclass AND (NOT t.tgisinternal OR (t.tgisinternal AND t.tgenabled = 'D')
+WHERE t.tgrelid = %(table_name)s::pg_catalog.regclass AND (NOT t.tgisinternal OR (t.tgisinternal AND t.tgenabled = 'D')
     OR EXISTS (SELECT 1 FROM pg_catalog.pg_depend WHERE objid = t.oid
         AND refclassid = 'pg_catalog.pg_trigger'::pg_catalog.regclass))
 ORDER BY 1;
