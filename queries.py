@@ -14,11 +14,13 @@ Where attrelid = %(table_name)s::regclass and attnum > 0;
 """
 
 GET_PRIMARY_KEYS = """
-SELECT c2.relname, i.indisprimary, i.indisunique, i.indisclustered, i.indisvalid, pg_catalog.pg_get_indexdef(i.indexrelid, 0, true),
-  pg_catalog.pg_get_constraintdef(con.oid, true), contype, condeferrable, condeferred, i.indisreplident, c2.reltablespace
+SELECT 
+  con.conname, attr.attname, c.relname, con.conkey,
+  pg_catalog.pg_get_constraintdef(con.oid, true)
 FROM pg_catalog.pg_class c, pg_catalog.pg_class c2, pg_catalog.pg_index i
   LEFT JOIN pg_catalog.pg_constraint con ON (conrelid = i.indrelid AND conindid = i.indexrelid AND contype IN ('p','u','x'))
-WHERE c.oid = %(table_name)s::regclass AND c.oid = i.indrelid AND i.indexrelid = c2.oid AND con.contype = 'p'
+  join pg_attribute attr on attr.attnum = any(con.conkey)
+WHERE c.oid = %(table_name)s::regclass AND c.oid = i.indrelid AND i.indexrelid = c2.oid AND con.contype = 'p' and attr.attrelid = c.oid
 ORDER BY i.indisprimary DESC, c2.relname;
 """
 
