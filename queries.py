@@ -25,13 +25,18 @@ ORDER BY i.indisprimary DESC, c2.relname;
 """
 
 GET_FOREIGN_KEYS = """
-SELECT true as sametable, conname,
-  pg_catalog.pg_get_constraintdef(r.oid, true) as condef,
-  conrelid::pg_catalog.regclass AS ontable
-FROM pg_catalog.pg_constraint r
-WHERE r.conrelid = %(table_name)s::regclass AND r.contype = 'f'
-     AND conparentid = 0
-ORDER BY conname;
+select con.conname, cls.relname, con.conkey, attr.attname, 
+fcls.relname, con.confkey, fattr.attname, 
+pg_get_constraintdef(con.oid, true)
+from pg_constraint con
+join pg_class cls on con.conrelid = cls.oid
+join pg_attribute attr on con.conrelid = attr.attrelid
+join pg_class fcls on con.confrelid = fcls.oid
+join pg_attribute fattr on con.confrelid = fattr.attrelid
+where con.contype = 'f'
+and attr.attnum = any(con.conkey)
+and fattr.attnum = any(con.confkey)
+and cls.oid = %(table_name)s::regclass;
 """
 
 

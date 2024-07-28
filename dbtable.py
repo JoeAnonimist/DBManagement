@@ -90,19 +90,17 @@ if __name__ == '__main__':
     
     print('attributes:\n')
     for attr in tbl.attributes:
-        #print(attr.number, attr.name, attr.data_type, 
-        #    attr.data_length, attr.dt_details, attr.dimensions, 
-        #    attr.not_null, attr.has_default, attr.has_missing, 
-        #    attr.identity, attr.generated, attr.collation, 
-        #    attr.acl, attr.options, attr.foreign_data_options, 
-        #    attr.missing_value)
-        print(attr.path)
+        print(attr.number, attr.name, attr.data_type, 
+            attr.data_length, attr.dt_details, attr.dimensions, 
+            attr.not_null, attr.has_default, attr.has_missing, 
+            attr.identity, attr.generated, attr.collation, 
+            attr.acl, attr.options, attr.foreign_data_options, 
+            attr.missing_value)
     
     print('\nprimary keys:\n')
     for pk in tbl.primary_keys:
-        #print(pk.constraint_name, pk.name, pk.column_keys, 
-        #    pk.table_name, pk.definition)
-        print(pk.path)
+        print(pk.constraint_name, pk.name, pk.column_keys, 
+            pk.table_name, pk.definition)
         
     print('\nforeign keys\n')
     for fk in tbl.foreign_keys:
