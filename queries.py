@@ -1,3 +1,9 @@
+GET_TABLES = """
+select tablename, schemaname from pg_tables 
+where schemaname not in ('pg_catalog', 'information_schema') 
+order by tablename;
+"""
+
 GET_ATTRIBUTES = """
 Select attr.attnum, attr.attname, typ.typname, attr.attlen,  
     attr.atttypmod, attr.attndims, attr.attnotnull, 
@@ -25,8 +31,8 @@ ORDER BY i.indisprimary DESC, c2.relname;
 """
 
 GET_FOREIGN_KEYS = """
-select con.conname, cls.relname, con.conkey, attr.attname, 
-fcls.relname, con.confkey, fattr.attname, 
+select con.conname, attr.attname, cls.relname, con.conkey,
+fattr.attname, fcls.relname, con.confkey,  
 pg_get_constraintdef(con.oid, true)
 from pg_constraint con
 join pg_class cls on con.conrelid = cls.oid
@@ -41,13 +47,20 @@ and cls.oid = %(table_name)s::regclass;
 
 
 GET_REFERENCES = """
-SELECT conname, conrelid::pg_catalog.regclass AS ontable,
-       pg_catalog.pg_get_constraintdef(oid, true) AS condef
-  FROM pg_catalog.pg_constraint c
- WHERE confrelid IN (SELECT pg_catalog.pg_partition_ancestors(%(table_name)s)
-                     UNION ALL VALUES (%(table_name)s::pg_catalog.regclass))
-       AND contype = 'f' AND conparentid = 0
-ORDER BY conname;
+SELECT refcon.conname, refattr.attname, refcls.relname, refcon.conkey,
+fattr.attname, fcls.relname, refcon.confkey,
+pg_get_constraintdef(refcon.oid, true) AS condef
+FROM pg_constraint refcon
+join pg_class refcls on refcon.conrelid = refcls.oid
+join pg_attribute refattr on refcon.conrelid = refattr.attrelid
+join pg_class fcls on refcon.confrelid = fcls.oid
+join pg_attribute fattr on refcon.confrelid = fattr.attrelid
+ WHERE refcon.confrelid IN (SELECT pg_partition_ancestors(%(table_name)s)
+                     UNION ALL VALUES (%(table_name)s::regclass))
+AND refcon.contype = 'f' 
+AND refcon.conparentid = 0
+and refattr.attnum = any(refcon.conkey)
+and fattr.attnum = any(refcon.confkey);
 """
 
 GET_TRIGGERS = """

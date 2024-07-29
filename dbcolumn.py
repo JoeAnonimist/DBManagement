@@ -10,6 +10,8 @@ class DBColumn():
         options, foreign_data_options, missing_value):
         
         self.path = path
+        self.path.is_column = True
+        
         self.number = number
         self.name = name
         self.data_type = data_type
