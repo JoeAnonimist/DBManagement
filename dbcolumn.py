@@ -1,17 +1,13 @@
-from database import Database
-from objectpath import ObjectPath
-import queries
-
 class DBColumn():
-    
+
     def __init__(self, path, number, name, data_type, data_length,
-        dt_details, dimensions, not_null, has_default,
-        has_missing, identity, generated, collation, acl,
-        options, foreign_data_options, missing_value):
-        
+                 dt_details, dimensions, not_null, has_default,
+                 has_missing, identity, generated, collation, acl,
+                 options, foreign_data_options, missing_value):
+
         self.path = path
         self.path.is_column = True
-        
+
         self.number = number
         self.name = name
         self.data_type = data_type
@@ -28,4 +24,3 @@ class DBColumn():
         self.options = options
         self.foreign_data_options = foreign_data_options
         self.missing_value = missing_value
-        
