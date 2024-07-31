@@ -1,5 +1,6 @@
 from copy import copy
 import psycopg2.pool
+from psycopg2.extras import NamedTupleCursor
 from DBManagement import queries
 from DBManagement.objectpath import ObjectPath
 from DBManagement.dbtable import DBTable
@@ -20,8 +21,6 @@ class Database:
 
     def populate_tables(self):
 
-        #from DBManagement.dbtable import DBTable
-
         tables = self.exec_query(self.path, queries.GET_TABLES, "")
 
         table_objects = []
@@ -29,7 +28,7 @@ class Database:
         for table in tables:
             table_path = copy(self.path)
             table_path.table = table[0]
-            table_objects.append(DBTable(table_path, self, table[0], table[1]))
+            table_objects.append(DBTable(table_path, self, table))
         return table_objects
 
     def associators_of(self):
@@ -41,7 +40,8 @@ class Database:
     def exec_query(self, path, query, parameters):
 
         connection = self.connection_pool.getconn()
-        cursor = connection.cursor()
+        cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+        #cursor = connection.cursor()
         cursor.execute(query, parameters)
         return_values = cursor.fetchall()
         self.connection_pool.putconn(connection)
