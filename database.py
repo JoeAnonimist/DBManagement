@@ -7,14 +7,14 @@ from DBManagement.dbtable import DBTable
 
 class Database:
 
-    def __init__(self, server_name, name):
+    def __init__(self, server_name, name, user, password):
         self.connection_pool = None
         self.name = name
         self.server = server_name
         self.path = ObjectPath(self.name, self.server)
         self.connection_pool = psycopg2.pool.ThreadedConnectionPool(
-            5, 100, user='jon',
-            password='jon',
+            5, 100, user=user,
+            password=password,
             host=self.server,
             database=self.name)
         self.tables = self.populate_tables()
